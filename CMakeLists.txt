@@ -1,0 +1,88 @@
+CMAKE_MINIMUM_REQUIRED(VERSION 3.10.0 FATAL_ERROR)
+
+INCLUDE(GNUInstallDirs)
+
+# ---[ Project specIFication.
+SET(PROJECT_NAME imageconvert)
+
+PROJECT(${PROJECT_NAME} LANGUAGES CUDA CXX)
+
+if(NOT DEFINED CMAKE_CUDA_STANDARD)
+    set(CMAKE_CUDA_STANDARD 11)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)    
+endif()
+
+find_package( OpenCV REQUIRED )
+# Find library files for FreeImage
+find_path(
+		FREEIMAGE_INCLUDE_DIR
+		NAMES FreeImage.h
+		DOC "The directory where FreeImage.h resides")
+
+# Find library files
+find_library(
+		FREEIMAGE_LIBRARY
+		NAMES freeimage
+		DOC "The FreeImage library")
+if (NOT FREEIMAGE_LIBRARY)
+    message(FATAL_ERROR "FreeImage not found")
+else()
+    message(STATUS "Found freeimage=${FREEIMAGE_LIBRARY}")
+endif()
+
+include_directories(${FREEIMAGE_INCLUDE_DIRS})
+include_directories( ${OpenCV_INCLUDE_DIRS} )
+include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES}) 
+link_directories(${CMAKE_CUDA_INCLUDE_DIRS})
+
+if (UNIX)
+    find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+    find_library(NPPIF_LIBRARY nppif ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+    find_library(NPPC_LIBRARY nppc ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+    find_library(NPPISU_LIBRARY nppisu ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+    find_library(CULIBOS culibos ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
+endif (UNIX)
+
+
+if (MSVC OR WIN32 OR MSYS)
+    MESSAGE( STATUS "CMAKE_CUDA_COMPILER:         " ${CMAKE_CUDA_COMPILER} )
+    set(CUDA_LIBRARY_PATH "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v11.0/lib/x64")
+    set(CUDART_LIBRARY ${CUDA_LIBRARY_PATH}/cudart.lib)
+    set(NPPIF_LIBRARY ${CUDA_LIBRARY_PATH}/nppif.lib)
+    set(NPPC_LIBRARY ${CUDA_LIBRARY_PATH}/nppc.lib)
+    set(NPPISU_LIBRARY ${CUDA_LIBRARY_PATH}/nppisu.lib)
+    set(CULIBOS ${CUDA_LIBRARY_PATH}/culibos.lib)
+endif()
+
+PROJECT(${PROJECT_NAME} C CXX CUDA)
+
+# ---[ Use the default installation path if not set.
+IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    SET(CMAKE_INSTALL_PREFIX ${CMAKE_BINARY_DIR} CACHE PATH "" FORCE)
+ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
+# ---[ Build type
+IF(NOT CMAKE_BUILD_TYPE) 
+    SET(CMAKE_BUILD_TYPE Develop)
+ENDIF(NOT CMAKE_BUILD_TYPE)
+
+SET(EXAMPLES_DESCRIPTOR_SOURCES "src/main.cu")
+ADD_EXECUTABLE(${PROJECT_NAME} ${EXAMPLES_DESCRIPTOR_SOURCES})
+SET_SOURCE_FILES_PROPERTIES(${EXAMPLES_DESCRIPTOR_SOURCES} PROPERTIES LANGUAGE CUDA)
+TARGET_COMPILE_FEATURES(${PROJECT_NAME} PUBLIC cxx_std_14)
+SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES CUDA_SEPERABLE_COMPILATION ON)
+SET_TARGET_PROPERTIES(${PROJECT_NAME} PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../bin")
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+target_include_directories(${PROJECT_NAME} 
+                                                        PRIVATE
+                                                        lib/Common/UtilNPP/
+                                                        lib/Common/)
+if (UNIX)
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PUBLIC 
+                                            ${CUDART_LIBRARY} ${NPPIF_LIBRARY} ${NPPC_LIBRARY} ${NPPISU_LIBRARY} ${CULIBOS}
+                                            ${OpenCV_LIBS}
+                                            ${FREEIMAGE_LIBRARY})
+endif (UNIX)
+
+INSTALL(TARGETS ${PROJECT_NAME} DESTINATION bin)
