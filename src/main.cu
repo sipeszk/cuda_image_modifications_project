@@ -15,7 +15,7 @@ int main(int argc, char** argv){
     }
     bool edge = false;
     bool invert = false;
-    std::string option(argv[2]); // the second argument is the option
+    string option(argv[2]); // the second argument is the option
     if(option.compare("-i") == 0){
         invert = true;
         cout << "Inverting Image..." << endl;

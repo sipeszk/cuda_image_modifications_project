@@ -5,7 +5,7 @@ __global__ void kernel(unsigned char* image){
 
     int threadId = (blockIdx.x + blockIdx.y * gridDim.x) * 3;
 
-   for (int i = 0; i < 3; i++)
+   for (int i = 0; i < 3; i++) // loop for BGR channels
     {
         image[threadId + i] = 255 - image[threadId + i];
     }
@@ -36,17 +36,19 @@ __host__ void ImageInversion(unsigned char * h_image, int rows, int columns){
     float elapsedTime;
 
     cudaEventCreate(&start);
+    cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
 
     kernel<<<blocksPerGrid, 1>>>(d_image);
 
-    cudaEventCreate(&stop);
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
 
     cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventDestroy(start);
+    cudaEventDestroy(stop);
 
-    printf("The kernel execution time: %f sec\n", elapsedTime);
+    printf("The kernel execution time: %f millisec\n", elapsedTime);
 
     printf("Copy output data from the CUDA device to the host memory\n");
     err = cudaMemcpy(h_image, d_image, rows*columns*3,cudaMemcpyDeviceToHost);

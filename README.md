@@ -30,4 +30,4 @@ For the installation process, the _Cmake_ is used which generates a _Makefile_ f
       `cmake ..`   
       `make`   
       `cd ..`  
-After the succesfull installation, the executable (_imageconvert.exe_ ) can be found in the bin directory. 
+After the succesfull installation, the executable (_imageconvert.exe_ ) can be found in the _bin_ directory. 
